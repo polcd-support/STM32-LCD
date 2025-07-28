@@ -10,6 +10,7 @@ typedef enum {
     STATE_LOGO,
     STATE_TEXT,
     STATE_IMAGE,
+	STATE_COLOR_FULL,
     STATE_COLOR_BAR,
     STATE_GRAYSCALE,
     STATE_COUNTDOWN,
@@ -19,6 +20,7 @@ typedef enum {
 AppState g_state = STATE_LOGO;
 uint32_t g_state_timer = 0;
 uint8_t g_img_index = 0;
+uint8_t color_full_index = 0;
 uint8_t g_countdown = 3;
 extern const uint8_t gImage_logo[];
 //extern const unsigned char gImage_img1[],gImage_img2[],gImage_img3[];
@@ -35,7 +37,7 @@ void LCD_DEMO(void)
 	delay_ms(100);
 	LCD_BLK_Set();//打开背光
 	
-	static int lastX = -1, lastY = -1;
+	static uint16_t lastX,lastY;
 	while (1)
 	{
     /* USER CODE END WHILE */
@@ -44,7 +46,7 @@ void LCD_DEMO(void)
 		CST816_Get_XY_AXIS(); // 更新触摸坐标
         switch (g_state) {
             case STATE_LOGO:
-				LCD_ShowPicture(0, 29, 239, 219, gImage_logo);
+				LCD_ShowPicture(29, 29, 199, 182, gImage_logo);
                 
                 if (HAL_GetTick() - g_state_timer > LOGO_DURATION) {
                     LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, BLACK);
@@ -60,7 +62,7 @@ void LCD_DEMO(void)
                 
                 if (HAL_GetTick() - g_state_timer > TEXT_DURATION) {
                     LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, BLACK);
-                    g_state = STATE_COLOR_BAR;
+                    g_state = STATE_COLOR_FULL;
                     g_state_timer = HAL_GetTick();
                 }
                 break;
@@ -82,7 +84,23 @@ void LCD_DEMO(void)
                     g_state_timer = HAL_GetTick();
                 }
                 break;
+            case STATE_COLOR_FULL:
+				switch (color_full_index) {
+					case 0: LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, RED); break;
+					case 1: LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, GREEN); break;
+					case 2: LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLUE); break;
+					case 3: LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE); break;
+					case 4: LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLACK); break;
+				}
                 
+				if (HAL_GetTick() - g_state_timer > COLOR_FULL_INTERVAL) {
+					if (++color_full_index > 4) {
+						g_state = STATE_COLOR_BAR;
+						color_full_index = 0;
+					}
+					g_state_timer = HAL_GetTick();
+				}
+				break;
             case STATE_COLOR_BAR:
                 DrawColorBars();
                 if (HAL_GetTick() - g_state_timer > EFFECT_DURATION) {
@@ -96,8 +114,9 @@ void LCD_DEMO(void)
                 DrawGrayscale();
                 if (HAL_GetTick() - g_state_timer > EFFECT_DURATION) {
                     LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLACK);
-                    g_state = STATE_COUNTDOWN;
+                    g_state = STATE_HANDWRITING;
                     g_state_timer = HAL_GetTick();
+				
                 }
                 break;
                 
@@ -106,7 +125,7 @@ void LCD_DEMO(void)
                 if (HAL_GetTick() - g_state_timer > 1000) {
                     if (--g_countdown == 0) {
                         LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLACK);
-                        DrawClearButton();
+//                        DrawClearButton();
                         g_state = STATE_HANDWRITING;
                     }
                     g_state_timer = HAL_GetTick();
@@ -117,30 +136,28 @@ void LCD_DEMO(void)
                 // 触摸绘图
 				
 				if (CST816_Get_FingerNum() > 0) {
-					if(lastX != -1 && lastY != -1) {
+					if(lastX != 0xFFFF && lastY != 0xFFFF) {
 						// 使用Bresenham算法画线
-						LCD_DrawLine(lastX, lastY, CST816_Instance.X_Pos, CST816_Instance.Y_Pos, WHITE);
+						LCD_DrawThickLine(lastX, lastY, CST816_Instance.X_Pos, CST816_Instance.Y_Pos, WHITE,2);
 					}
 					lastX = CST816_Instance.X_Pos;
 					lastY = CST816_Instance.Y_Pos;
+					// 清屏按钮检测
+//					if (IsTouchInButton(lastX, lastY)) {
+//						LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, BLACK);
+//						DrawClearButton();
+//					}
 				} else {
-					lastX = lastY = -1; // 手指抬起时重置
+					lastX = lastY = 0xFFFF; // 手指抬起时重置
 				}
-                
-                // 清屏按钮检测
-                if (IsTouchInButton(CST816_Instance.X_Pos, CST816_Instance.Y_Pos)) {
-                    LCD_FillRect_FastStatic(0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, BLACK);
-                    DrawClearButton();
-                }
-                break;
+				break;
         }
     }
 }
 
 uint8_t IsTouchInButton(uint16_t x, uint16_t y) {
     return (x >= SCREEN_WIDTH-BTN_WIDTH) && 
-           (y >= SCREEN_HEIGHT-BTN_HEIGHT) &&
-           (CST816_Get_FingerNum() > 0);
+           (y >= SCREEN_HEIGHT-BTN_HEIGHT);
 }
 
 

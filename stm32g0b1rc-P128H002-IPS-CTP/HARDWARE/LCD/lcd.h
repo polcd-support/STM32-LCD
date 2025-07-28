@@ -31,6 +31,9 @@ void DrawClearButton(void);
 
 void LCD_FillRect_FastStatic(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color);
 void DrawThickLine(int x0, int y0, int x1, int y1, int thickness, uint16_t color) ;
+
+void LCD_DrawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color, uint8_t thickness);
+
 //»­±ÊÑÕÉ«
 #define WHITE         	 0xFFFF
 #define BLACK         	 0x0000	  
@@ -56,9 +59,10 @@ void DrawThickLine(int x0, int y0, int x1, int y1, int thickness, uint16_t color
 
 
 /* ºê¶¨Òå */
-#define LOGO_DURATION    5000
-#define TEXT_DURATION    5000
+#define LOGO_DURATION    3000
+#define TEXT_DURATION    2000
 #define IMAGE_INTERVAL   2000
+#define COLOR_FULL_INTERVAL   1000
 #define EFFECT_DURATION  3000
 #define BTN_WIDTH        60
 #define BTN_HEIGHT       30

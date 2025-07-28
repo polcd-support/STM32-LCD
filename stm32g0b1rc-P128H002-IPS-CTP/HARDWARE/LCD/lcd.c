@@ -9,6 +9,7 @@
 extern DMA_HandleTypeDef hdma_spi1_tx;
 
 #define MAX_BUFFER_SIZE 512  // 根据可用RAM调整
+#define MAX_ALLOWED_DISTANCE 50  // 像素
 
 /******************************************************************************
       函数说明：在指定区域填充颜色
@@ -141,6 +142,158 @@ void LCD_DrawLine(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2,uint16_t color
 			uCol+=incy;
 		}
 	}
+}
+
+//电容触摸屏专有部分
+//画水平线
+//x0,y0:坐标
+//len:线长度
+//color:颜色
+void gui_draw_hline(uint16_t x0,uint16_t y0,uint16_t len,uint16_t color)
+{
+	if(len==0)return;
+	LCD_DrawLine(x0,y0,x0+len-1,y0,color);	
+}
+
+void gui_fill_circle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color)
+{                                              
+    uint32_t i;
+    uint32_t imax = (r * 724) >> 10;  // r * 707/1000 ≈ r * 724/1024
+    uint32_t sqmax = r * r + (r >> 1);
+    uint32_t x = r;
+    uint32_t i_squared = 1;  // 1^2 = 1
+    
+    gui_draw_hline(x0 - r, y0, 2 * r, color);
+    
+    for (i = 1; i < imax + 1; i++) {
+        if ((i_squared + x * x) > sqmax) {
+            if (x > imax) {
+                gui_draw_hline(x0 - i + 1, y0 + x, 2 * (i - 1), color);
+                gui_draw_hline(x0 - i + 1, y0 - x, 2 * (i - 1), color);
+            }
+            x--;
+        }
+        // 绘制内部线
+        gui_draw_hline(x0 - x, y0 + i, 2 * x, color);
+        gui_draw_hline(x0 - x, y0 - i, 2 * x, color);
+        
+        i_squared += (i << 1) + 1;  // 计算下一个i的平方
+    }
+}
+
+/******************************************************************************
+      函数说明：画宽线
+      入口数据：x1,y1   起始坐标
+                x2,y2   终止坐标
+                color   线的颜色
+                size 线的宽度(像素)
+      返回值：  无
+******************************************************************************/
+void LCD_DrawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color, uint8_t size)
+{
+	if(size == 1) {
+        LCD_DrawLine(x1, y1, x2, y2, color);
+        return;
+    }
+    
+    // 快速边界检查
+    if(x1 < size || x2 < size || y1 < size || y2 < size) return;
+    
+    int16_t dx = x2 - x1;
+    int16_t dy = y2 - y1;
+    
+    // 快速距离检查（近似）
+    uint16_t abs_dx = dx > 0 ? dx : -dx;
+    uint16_t abs_dy = dy > 0 ? dy : -dy;
+    if((abs_dx > MAX_ALLOWED_DISTANCE) || (abs_dy > MAX_ALLOWED_DISTANCE)) {
+        return;
+    }
+//    
+//     // 处理垂直线的情况
+//    if(dx == 0) {
+//        // 绘制垂直线的主体
+//        for(uint8_t i = 0; i < thickness; i++) {
+//            LCD_DrawLine(x1 + i - thickness/2, y1, x2 + i - thickness/2, y2, color);
+//        }
+//        // 绘制两端的半圆
+//        LCD_DrawCircle(x1, y1, thickness/2, color, 1); // 起点圆
+//        LCD_DrawCircle(x2, y2, thickness/2, color, 1); // 终点圆
+//        return;
+//    }
+//    
+//    // 处理水平线的情况
+//    if(dy == 0) {
+//        // 绘制水平线的主体
+//        for(uint8_t i = 0; i < thickness; i++) {
+//            LCD_DrawLine(x1, y1 + i - thickness/2, x2, y2 + i - thickness/2, color);
+//        }
+//        // 绘制两端的半圆
+//        LCD_DrawCircle(x1, y1, thickness/2, color, 1); // 起点圆
+//        LCD_DrawCircle(x2, y2, thickness/2, color, 1); // 终点圆
+//        return;
+//    }
+//    
+//    // 计算线的垂直方向
+//    float nx = -dy;
+//    float ny = dx;
+//    
+//    // 归一化
+//	int16_t gcd_val = gcd(abs(nx), abs(ny));
+//    if(gcd_val != 0) {
+//        nx /= gcd_val;
+//        ny /= gcd_val;
+//    }
+//    
+//    // 计算偏移量
+//    float offset = (thickness - 1) / 2.0f;
+//    
+//    // 绘制多条平行线形成宽线主体
+//    for(uint8_t i = 0; i < thickness; i++) {
+//        float currOffset = i - offset;
+//        int16_t x1_offset = x1 + (int16_t)(nx * currOffset);
+//        int16_t y1_offset = y1 + (int16_t)(ny * currOffset);
+//        int16_t x2_offset = x2 + (int16_t)(nx * currOffset);
+//        int16_t y2_offset = y2 + (int16_t)(ny * currOffset);
+//        
+//        LCD_DrawLine(x1_offset, y1_offset, x2_offset, y2_offset, color);
+//    }
+//    
+//    // 绘制两端的圆形端点
+//    LCD_DrawCircle(x1, y1, thickness/2, color, 1); // 起点圆
+//    LCD_DrawCircle(x2, y2, thickness/2, color, 1); // 终点圆
+
+	uint16_t t; 
+	int xerr=0,yerr=0,delta_x,delta_y,distance; 
+	int incx,incy,uRow,uCol; 
+	if(x1<size|| x2<size||y1<size|| y2<size)return; 
+	delta_x=x2-x1; //计算坐标增量 
+	delta_y=y2-y1; 
+	uRow=x1; 
+	uCol=y1; 
+	if(delta_x>0)incx=1; //设置单步方向 
+	else if(delta_x==0)incx=0;//垂直线 
+	else {incx=-1;delta_x=-delta_x;} 
+	if(delta_y>0)incy=1; 
+	else if(delta_y==0)incy=0;//水平线 
+	else{incy=-1;delta_y=-delta_y;} 
+	if( delta_x>delta_y)distance=delta_x; //选取基本增量坐标轴 
+	else distance=delta_y; 
+	for(t=0;t<=distance+1;t++ )//画线输出 
+	{  
+		gui_fill_circle(uRow,uCol,size,color);//画点 
+		xerr+=delta_x ; 
+		yerr+=delta_y ; 
+		if(xerr>distance) 
+		{ 
+			xerr-=distance; 
+			uRow+=incx; 
+		} 
+		if(yerr>distance) 
+		{ 
+			yerr-=distance; 
+			uCol+=incy; 
+		} 
+	}  
 }
 
 void DrawThickLine(int x0, int y0, int x1, int y1, int thickness, uint16_t color) {

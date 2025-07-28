@@ -16,11 +16,14 @@ void delay_ms(uint32_t ms) {
     }
 }
 
+static void delay_1us(){
+	for(uint8_t i = 0;i<16;i++){
+		__nop();__nop();__nop();__nop();
+	}
+}
+
 void delay_us(uint32_t us){
-    uint32_t start = HAL_GetTick() * 1000; // ×ª»»ÎªÎ¢Ãë
-    uint32_t elapsed = 0;
-    while (elapsed < us) {
-        uint32_t now = HAL_GetTick() * 1000;
-        elapsed = now - start;
-    }
+    for(uint32_t i=0;i<us;i++){
+		delay_1us();
+	}
 }
