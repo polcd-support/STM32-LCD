@@ -1,0 +1,75 @@
+
+			WriteComm(0x11);
+			Delay(150);
+			
+			WriteComm(0xf0);
+			WriteData(0xc3);
+			
+			WriteComm(0xf0);
+			WriteData(0x96);
+
+			WriteComm(0x3A);
+			WriteData(0x55);
+			
+			WriteComm(0x36);
+			WriteData(0x40);
+			
+			WriteComm(0xe8);
+			WriteData(0x40);
+			WriteData(0x82);
+			WriteData(0x07);
+			WriteData(0x18);
+			WriteData(0x27);
+			WriteData(0x0a);
+			WriteData(0xb6);
+			WriteData(0x33);
+			
+			WriteComm(0xc5);
+			WriteData(0x27);
+			
+			WriteComm(0xc2);
+			WriteData(0xa7);
+			
+			WriteComm(0xe0);
+			WriteData(0xf0);
+			WriteData(0x01);
+			WriteData(0x06);
+			WriteData(0x0f);
+			WriteData(0x12);
+			WriteData(0x1d);
+			WriteData(0x36);
+			WriteData(0x54);
+			WriteData(0x44);
+			WriteData(0x0c);
+			WriteData(0x18);
+			WriteData(0x16);
+			WriteData(0x13);
+			WriteData(0x15);
+			
+			WriteComm(0xe1);
+			WriteData(0xf0);
+			WriteData(0x01);
+			WriteData(0x05);
+			WriteData(0x0a);
+			WriteData(0x0b);
+			WriteData(0x07);
+			WriteData(0x32);
+			WriteData(0x44);
+			WriteData(0x44);
+			WriteData(0x0c);
+			WriteData(0x18);
+			WriteData(0x17);
+			WriteData(0x13);
+			WriteData(0x16);
+			
+			WriteComm(0xf0);
+			WriteData(0x3c);
+			
+				WriteComm(0x21);
+			WriteData(0x00);
+			
+			WriteComm(0xf0);
+			WriteData(0x69);
+			
+			Delay(150);
+			WriteComm(0x29);
